@@ -1,0 +1,219 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yasin Search Engine</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            color: #202124;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .logo {
+            font-family: "Product Sans", Arial, sans-serif;
+            font-size: 92px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .logo span {
+            font-size: 92px;
+            font-weight: normal;
+        }
+
+        .logo .letter-g { color: #4285F4; } /* Blue */
+        .logo .letter-o1 { color: #EA4335; } /* Red */
+        .logo .letter-o2 { color: #FBBC05; } /* Yellow */
+        .logo .letter-g2 { color: #4285F4; } /* Blue */
+        .logo .letter-l { color: #34A853; } /* Green */
+        .logo .letter-e { color: #EA4335; } /* Red */
+
+        .search-bar {
+            width: 80%;
+            max-width: 800px;
+            display: flex;
+            align-items: center;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;
+            padding: 10px 20px;
+            margin: 0 auto;
+            box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            outline: none;
+            font-size: 18px;
+        }
+
+        .search-bar button {
+            background-color: white;
+            border: none;
+            cursor: pointer;
+            outline: none;
+            font-size: 18px;
+            color: #4285F4;
+            margin-left: 10px;
+        }
+
+        .search-results {
+            margin-top: 20px;
+            text-align: left;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        .result-item {
+            margin-bottom: 30px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .result-item img {
+            max-width: 120px;
+            margin-right: 20px;
+            border-radius: 8px;
+        }
+
+        .search-results h3 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .search-results h3 a {
+            color: #1a0dab;
+            text-decoration: none;
+        }
+
+        .search-results h3 a:hover {
+            text-decoration: underline;
+        }
+
+        .search-results .url {
+            color: #006621;
+            font-size: 14px;
+        }
+
+        .search-results p {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 12px;
+            color: #70757a;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="logo">
+        <span class="letter-g">G</span>
+        <span class="letter-o1">o</span>
+        <span class="letter-o2">o</span>
+        <span class="letter-g2">g</span>
+        <span class="letter-l">l</span>
+        <span class="letter-e">e</span>
+    </div>
+
+    <div class="search-container">
+        <form id="searchForm" class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search Wikipedia">
+            <button type="submit">🔍</button>
+        </form>
+    </div>
+
+    <div class="search-results" id="searchResults"></div>
+
+    <footer>
+        © 2024 Yasin Search Engine
+    </footer>
+
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const query = document.getElementById('searchInput').value;
+            searchWikipedia(query);
+        });
+
+        function searchWikipedia(query) {
+            const apiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&srsearch=${encodeURIComponent(query)}&origin=*`;
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const results = data.query.search;
+                    displayResults(results);
+                })
+                .catch(error => {
+                    console.error('Error fetching Wikipedia results:', error);
+                });
+        }
+
+        function displayResults(results) {
+            const resultsContainer = document.getElementById('searchResults');
+            resultsContainer.innerHTML = '';
+
+            results.forEach(result => {
+                const url = `https://en.wikipedia.org/?curid=${result.pageid}`;
+                const title = result.title;
+                const snippet = result.snippet;
+
+                // Fetch the image for each result
+                fetchImageForResult(title, url, snippet);
+            });
+        }
+
+        function fetchImageForResult(title, url, snippet) {
+            const imageApiUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=thumbnail&pithumbsize=120&titles=${encodeURIComponent(title)}&origin=*`;
+
+            fetch(imageApiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const pages = data.query.pages;
+                    let thumbnail = '';
+
+                    for (const pageId in pages) {
+                        if (pages[pageId].thumbnail) {
+                            thumbnail = pages[pageId].thumbnail.source;
+                        }
+                    }
+
+                    displayResultItem(title, url, snippet, thumbnail);
+                })
+                .catch(error => {
+                    console.error('Error fetching Wikipedia image:', error);
+                    displayResultItem(title, url, snippet, ''); // Display without image if there's an error
+                });
+        }
+
+        function displayResultItem(title, url, snippet, thumbnail) {
+            const resultsContainer = document.getElementById('searchResults');
+            const resultItem = document.createElement('div');
+            resultItem.classList.add('result-item');
+
+            resultItem.innerHTML = `
+                ${thumbnail ? `<img src="${thumbnail}" alt="${title}">` : ''}
+                <div>
+                    <h3><a href="${url}" target="_blank">${title}</a></h3>
+                    <div class="url">${url}</div>
+                    <p>${snippet}...</p>
+                </div>
+            `;
+
+            resultsContainer.appendChild(resultItem);
+        }
+    </script>
+
+</body>
+</html>
